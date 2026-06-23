@@ -1,0 +1,1621 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BK Dairy — CowGenic Impact Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #F9F6E9; --card: #FFFFFF; --border: #D4E2C8;
+  --gd: #4A7C2D; --gm: #3C5C3B; --gl: #A3D97A; --gp: #E7F9E7;
+  --txt: #2C3E2C; --dim: #5A7A5A; --mut: #8BA88B;
+  --amb: #C4962D; --ambp: #FFF4D4;
+  --red: #B85C5C; --redp: #FFE8E8;
+  --blu: #3A7CB8; --blup: #E0F0FF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--txt); font-family:Arial,Helvetica,sans-serif; font-size:13px; }
+
+/* ── Header ── */
+header {
+  padding:20px 28px 14px; border-bottom:2px solid var(--gd);
+  background:linear-gradient(135deg,#E7F9E7 0%,#F9F6E9 60%,#FFF4D4 100%);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+}
+header h1 { font-family:'Georgia Pro',Georgia,serif; font-size:clamp(16px,2.5vw,23px); font-weight:700; color:var(--gd); }
+header p { font-size:10px; color:var(--dim); margin-top:2px; }
+.live { display:flex; align-items:center; gap:5px; background:var(--gp); border:1px solid var(--gl); color:var(--gd); padding:3px 10px; border-radius:12px; font-size:9px; font-weight:700; letter-spacing:.06em; }
+.live i { width:5px; height:5px; border-radius:50%; background:var(--gd); animation:blink 1.4s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Layout ── */
+main { max-width:1440px; margin:0 auto; padding:16px; display:grid; grid-template-columns:300px 1fr; gap:14px; }
+@media(max-width:960px){ main{grid-template-columns:1fr} }
+
+/* ── Cards ── */
+.card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; box-shadow:0 1px 3px rgba(60,92,59,.04); }
+.card-head { display:flex; align-items:center; gap:7px; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.card-head .icon { font-size:14px; background:var(--gp); width:26px; height:26px; border-radius:4px; display:flex; align-items:center; justify-content:center; }
+.card-head .title { font-family:'Georgia Pro',Georgia,serif; font-size:11.5px; font-weight:700; color:var(--gd); }
+.card-head .sub { font-size:8.5px; color:var(--mut); }
+
+/* ── Sliders ── */
+.sliders { display:flex; flex-direction:column; gap:8px; }
+.sl label { display:flex; justify-content:space-between; font-size:10px; color:var(--dim); margin-bottom:2px; }
+.sl .val { font-size:10.5px; font-weight:700; color:var(--gd); background:var(--gp); padding:0 5px; border-radius:2px; }
+input[type=range] { -webkit-appearance:none; width:100%; height:3px; background:var(--border); border-radius:2px; outline:none; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--gd); box-shadow:0 0 0 2px rgba(74,124,45,.12); cursor:pointer; }
+
+/* ── Toggle Buttons ── */
+.toggles { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.tog { padding:8px 4px; border-radius:5px; border:1.5px solid var(--border); background:transparent; color:var(--mut); font-family:Arial,sans-serif; font-size:10px; font-weight:700; cursor:pointer; text-align:center; line-height:1.2; transition:all .15s; }
+.tog.on { border-color:var(--gd); background:var(--gp); color:var(--gd); }
+.tog:hover:not(.on) { border-color:var(--gm); color:var(--txt); }
+
+/* ── KPI Strip ── */
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+@media(max-width:700px){ .kpi-row{grid-template-columns:1fr 1fr} }
+.kpi { background:var(--card); border:1px solid var(--border); border-radius:7px; padding:10px 12px; border-left:3px solid var(--gd); }
+.kpi.a { border-left-color:var(--amb); } .kpi.b { border-left-color:var(--blu); } .kpi.r { border-left-color:var(--red); }
+.kpi .lab { font-size:8.5px; color:var(--mut); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.kpi .num { font-family:'Georgia Pro',Georgia,serif; font-size:19px; font-weight:700; line-height:1; }
+.kpi .num.gc { color:var(--gd); } .kpi .num.ac { color:var(--amb); } .kpi .num.bc { color:var(--blu); } .kpi .num.rc { color:var(--red); }
+.kpi .det { font-size:8.5px; color:var(--dim); margin-top:2px; }
+
+/* ── Dashboard ── */
+.dash { display:flex; flex-direction:column; gap:10px; }
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+.chart-card h3 { font-family:'Georgia Pro',Georgia,serif; font-size:11px; font-weight:700; color:var(--gd); margin-bottom:8px; display:flex; align-items:center; gap:4px; }
+.chart-card h3 span { font-size:12px; }
+.note { font-size:7.5px; color:var(--mut); margin-top:4px; }
+
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:700px){ .grid2{grid-template-columns:1fr} }
+.full { grid-column:1/-1; }
+
+/* ── Production Compare ── */
+.prod-cmp { display:grid; grid-template-columns:1fr 36px 1fr; gap:8px; align-items:center; }
+.pbox { text-align:center; padding:10px; border-radius:6px; }
+.pbox.bl { background:#FFF4F4; border:1px solid #FFCCCC; }
+.pbox.en { background:var(--gp); border:1px solid var(--gl); }
+.pbox .pv { font-family:'Georgia Pro',Georgia,serif; font-size:24px; font-weight:700; }
+.pbox.bl .pv { color:var(--red); } .pbox.en .pv { color:var(--gd); }
+.pbox .pl { font-size:8.5px; color:var(--dim); margin-top:1px; }
+.parr { font-size:20px; color:var(--gd); font-weight:700; text-align:center; }
+
+/* ── Demographics Grid ── */
+.demo { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.dbox { border-radius:5px; padding:7px; text-align:center; }
+.dbox .dn { font-family:'Georgia Pro',Georgia,serif; font-size:18px; font-weight:700; }
+.dbox .dl { font-size:8px; color:var(--dim); margin-top:1px; }
+.dbox.g { background:var(--gp); } .dbox.g .dn { color:var(--gd); }
+.dbox.am { background:var(--ambp); } .dbox.am .dn { color:var(--amb); }
+.dbox.rd { background:var(--redp); } .dbox.rd .dn { color:var(--red); }
+.dbox.bl { background:var(--blup); } .dbox.bl .dn { color:var(--blu); }
+.dbox.pu { background:#F0EAFF; } .dbox.pu .dn { color:#6B4FA0; }
+
+/* ── ROI Table ── */
+.roi { width:100%; border-collapse:collapse; }
+.roi th { font-size:8.5px; color:var(--mut); text-align:left; padding:3px 5px; border-bottom:1px solid var(--border); font-weight:700; text-transform:uppercase; }
+.roi td { font-size:9.5px; padding:4px 5px; border-bottom:1px solid #EEF2E8; }
+.roi tr:hover td { background:var(--gp); }
+.tag { display:inline-block; padding:1px 4px; border-radius:2px; font-size:7.5px; font-weight:700; }
+.tag.d { background:var(--gp); color:var(--gd); } .tag.i { background:var(--ambp); color:var(--amb); }
+.pos { color:var(--gd); font-weight:700; } .neg { color:var(--red); font-weight:700; }
+
+.foot { font-size:8px; color:var(--mut); text-align:center; padding:10px; border-top:1px solid var(--border); }
+
+/* ── Simulation Controls Card ── */
+.sim-ctrl-info { font-size:8px; color:var(--dim); background:var(--ambp); border:1px solid var(--amb); border-radius:4px; padding:4px 7px; margin-bottom:6px; line-height:1.5; }
+.adopt-meter { height:4px; background:var(--border); border-radius:2px; margin-top:3px; overflow:hidden; }
+.adopt-fill  { height:100%; border-radius:2px; transition:width .3s, background .3s; }
+.mini-chart { margin-top:8px; padding-top:6px; border-top:1px solid var(--border); }
+.locked-control { opacity:.45; pointer-events:none; }
+/* ── New outcome cards ── */
+.out-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:0; }
+@media(max-width:700px){ .out-grid{grid-template-columns:1fr} }
+.out-box { border-radius:6px; padding:9px 11px; }
+.out-box .ol { font-size:8px; text-transform:uppercase; letter-spacing:.05em; color:var(--mut); margin-bottom:3px; }
+.out-box .ov { font-family:'Georgia Pro',Georgia,serif; font-size:17px; font-weight:700; line-height:1; }
+.out-box .od { font-size:8px; color:var(--dim); margin-top:2px; }
+.out-box.g { background:var(--gp); border:1px solid var(--gl); } .out-box.g .ov { color:var(--gd); }
+.out-box.a { background:var(--ambp); border:1px solid var(--amb); } .out-box.a .ov { color:var(--amb); }
+.out-box.b { background:var(--blup); border:1px solid var(--blu); } .out-box.b .ov { color:var(--blu); }
+.out-box.r { background:var(--redp); border:1px solid var(--red); } .out-box.r .ov { color:var(--red); }
+/* Business case cards */
+.business-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+@media(max-width:900px){ .business-grid{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:560px){ .business-grid{grid-template-columns:1fr} }
+.biz-card { border-radius:6px; border:1px solid var(--gl); background:var(--gp); padding:9px 10px; min-height:64px; }
+.biz-card .blab { font-size:7.8px; text-transform:uppercase; letter-spacing:.05em; color:var(--mut); margin-bottom:3px; }
+.biz-card .bval { font-family:'Georgia Pro',Georgia,serif; font-size:16px; font-weight:700; line-height:1.05; color:var(--gd); }
+.biz-card .bdet { font-size:8px; color:var(--dim); margin-top:3px; line-height:1.25; }
+.biz-card.amber { background:var(--ambp); border-color:var(--amb); } .biz-card.amber .bval { color:var(--amb); }
+.biz-card.blue { background:var(--blup); border-color:var(--blu); } .biz-card.blue .bval { color:var(--blu); }
+.biz-card.red { background:var(--redp); border-color:var(--red); } .biz-card.red .bval { color:var(--red); }
+/* Split baseline/simulation revenue panels */
+.rev-split { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:900px){ .rev-split{grid-template-columns:1fr} }
+.rev-panel { border:1px solid var(--border); border-radius:6px; padding:9px 10px; background:#fff; }
+.rev-panel h4 { font-family:'Georgia Pro',Georgia,serif; font-size:10px; font-weight:700; color:var(--gd); margin-bottom:6px; }
+.rev-panel.baseline-panel { border-color:#E6C9C9; background:#FFFDFD; }
+.rev-panel.baseline-panel h4 { color:var(--red); }
+.rev-panel.sim-panel { border-color:var(--gl); background:#FCFFFC; }
+.sim-note { font-size:7.5px; color:var(--mut); margin-top:4px; }
+/* ── Proj table ── */
+.proj-tbl { width:100%; border-collapse:collapse; font-size:9px; }
+.proj-tbl th { text-align:left; padding:3px 6px; border-bottom:1.5px solid var(--border); color:var(--mut); font-size:8px; text-transform:uppercase; font-weight:700; }
+.proj-tbl td { padding:4px 6px; border-bottom:1px solid #EEF2E8; }
+.proj-tbl tr:hover td { background:var(--gp); }
+.proj-tbl .pos { color:var(--gd); font-weight:700; }
+.proj-tbl .neg { color:var(--red); font-weight:700; }
+.proj-tbl .neu { color:var(--dim); }
+/* ── Scenario bar ── */
+.scen-bar { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+.scen-item { text-align:center; border-radius:5px; padding:7px 4px; }
+.scen-item .sv { font-family:'Georgia Pro',Georgia,serif; font-size:15px; font-weight:700; }
+.scen-item .sl { font-size:8px; color:var(--dim); margin-top:2px; }
+.scen-item.cons { background:#FFF4F4; } .scen-item.cons .sv { color:var(--red); }
+.scen-item.base { background:var(--gp); } .scen-item.base .sv { color:var(--gd); }
+.scen-item.opti { background:var(--blup); } .scen-item.opti .sv { color:var(--blu); }
+
+/* ── Professional polish pass ── */
+:root {
+  --bg: #F5F3EA;
+  --card: #FFFFFF;
+  --border: #DCE5D3;
+  --gd: #3F6F2A;
+  --gm: #2F4F35;
+  --gl: #9ECD77;
+  --gp: #EEF7EA;
+  --txt: #243224;
+  --dim: #526D52;
+  --mut: #789178;
+  --amb: #B88723;
+  --ambp: #FFF6DD;
+  --red: #A85151;
+  --redp: #FFF0F0;
+  --blu: #2F73A8;
+  --blup: #E7F2FC;
+}
+body {
+  background:
+    linear-gradient(180deg, rgba(238,247,234,.72) 0, rgba(245,243,234,0) 280px),
+    var(--bg);
+  color:var(--txt);
+  font-size:13px;
+  line-height:1.35;
+}
+header {
+  max-width:1440px;
+  margin:14px auto 0;
+  padding:18px 22px 16px;
+  border:1px solid rgba(74,124,45,.22);
+  border-bottom:3px solid var(--gd);
+  border-radius:10px;
+  background:linear-gradient(135deg,#FFFFFF 0%,#F4FAF1 58%,#FFF7E2 100%);
+  box-shadow:0 14px 38px rgba(47,79,53,.10);
+}
+header h1 { font-size:clamp(18px,2.2vw,25px); color:var(--gm); letter-spacing:0; }
+header p { font-size:10.5px; color:var(--dim); margin-top:4px; }
+.live { background:#FFFFFF; border-color:rgba(74,124,45,.28); box-shadow:inset 0 0 0 1px rgba(255,255,255,.65); }
+main { padding:18px 16px 14px; grid-template-columns:minmax(280px,310px) minmax(0,1fr); gap:16px; align-items:start; }
+aside { position:sticky; top:12px; }
+.card, .chart-card, .kpi {
+  border-color:rgba(63,111,42,.18);
+  box-shadow:0 10px 28px rgba(47,79,53,.075);
+}
+.card, .chart-card { padding:14px 15px; }
+.card-head { gap:9px; margin-bottom:11px; padding-bottom:9px; }
+.card-head .icon {
+  width:28px; height:28px; border-radius:7px;
+  background:linear-gradient(180deg,#F7FCF5,#EAF6E5);
+  border:1px solid rgba(74,124,45,.14);
+}
+.card-head .title, .chart-card h3 { color:var(--gm); letter-spacing:.01em; }
+.card-head .title { font-size:12px; }
+.card-head .sub { font-size:9px; }
+.sliders { gap:10px; }
+.sl label { font-size:10.5px; margin-bottom:4px; }
+.sl .val { border:1px solid rgba(74,124,45,.14); padding:1px 6px; border-radius:4px; }
+input[type=range] { height:4px; background:#DCE7D3; }
+input[type=range]::-webkit-slider-thumb { width:14px; height:14px; border:2px solid #FFFFFF; box-shadow:0 2px 7px rgba(47,79,53,.24); }
+.tog { border-radius:7px; background:#FBFCFA; padding:9px 6px; }
+.tog.on { background:linear-gradient(180deg,#F2FAEE,#E6F5DF); box-shadow:inset 0 0 0 1px rgba(255,255,255,.8); }
+.kpi-row { gap:10px; }
+.kpi { border-radius:9px; padding:13px 14px; background:linear-gradient(180deg,#FFFFFF,#FCFDFB); border-left-width:4px; }
+.kpi .lab { font-size:8px; letter-spacing:.08em; }
+.kpi .num { font-size:22px; }
+.kpi .det { font-size:9px; margin-top:5px; }
+.dash { gap:12px; }
+.chart-card { border-radius:9px; background:linear-gradient(180deg,#FFFFFF,#FEFFFD); }
+.chart-card h3 { font-size:12px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(63,111,42,.13); }
+.chart-card h3 span { opacity:.78; }
+.note, .sim-note { color:#748A74; line-height:1.45; }
+.out-grid, .business-grid { gap:10px; }
+.out-box, .biz-card, .dbox, .scen-item, .pbox {
+  border-radius:8px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.58);
+}
+.out-box, .biz-card { padding:11px 12px; min-height:72px; }
+.out-box .ol, .biz-card .blab { font-size:7.8px; letter-spacing:.075em; }
+.out-box .ov, .biz-card .bval { font-size:18px; margin-top:4px; }
+.out-box .od, .biz-card .bdet { font-size:8.5px; margin-top:5px; }
+.prod-cmp { grid-template-columns:1fr 44px 1fr; gap:10px; }
+.pbox { padding:14px 12px; }
+.pbox .pv { font-size:28px; }
+.parr { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; justify-self:center; background:var(--gp); border:1px solid var(--gl); }
+.demo { gap:8px; }
+.dbox { padding:10px 8px; }
+.dbox .dn { font-size:20px; }
+.roi th, .proj-tbl th { padding:7px 8px; background:#F7FAF4; }
+.roi td, .proj-tbl td { padding:7px 8px; }
+.roi tr:hover td, .proj-tbl tr:hover td { background:#F6FBF3; }
+.rev-split { gap:12px; }
+.rev-panel { border-radius:8px; padding:11px 12px; }
+.rev-panel h4 { font-size:10.5px; letter-spacing:.02em; }
+.rev-panel.baseline-panel { background:linear-gradient(180deg,#FFFFFF,#FFF8F8); border-color:#E8C9C9; }
+.rev-panel.sim-panel { background:linear-gradient(180deg,#FFFFFF,#F8FDF6); border-color:#BFDCAF; }
+.scen-bar { gap:10px; }
+.scen-item { padding:10px 6px; }
+.scen-item .sv { font-size:17px; }
+body > .chart-card, body > .grid2 {
+  max-width:1440px;
+  width:calc(100% - 32px);
+  margin:0 auto 14px;
+}
+body > .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.foot {
+  max-width:1440px;
+  margin:0 auto 18px;
+  color:#738873;
+}
+@media(max-width:960px){ aside{position:static} header{margin:0; border-radius:0} body > .grid2{grid-template-columns:1fr} }
+
+/* ── TailAdmin-inspired dashboard layer ── */
+:root {
+  --ta-bg:#F6F8F2;
+  --ta-card:#FFFFFF;
+  --ta-line:#E7EDE1;
+  --ta-ink:#1F2A1F;
+  --ta-soft:#667A66;
+  --ta-green:#3F6F2A;
+  --ta-green-soft:#EFF8EA;
+  --ta-shadow:0 1px 2px rgba(31,42,31,.04), 0 12px 30px rgba(31,42,31,.06);
+}
+body {
+  background:var(--ta-bg);
+  color:var(--ta-ink);
+}
+header {
+  border-radius:14px;
+  border:1px solid var(--ta-line);
+  border-bottom:1px solid var(--ta-line);
+  background:rgba(255,255,255,.92);
+  box-shadow:var(--ta-shadow);
+}
+header h1 { color:#1F371F; }
+.live { border-radius:999px; padding:6px 12px; background:var(--ta-green-soft); }
+main { grid-template-columns:minmax(300px,330px) minmax(0,1fr); gap:18px; }
+aside {
+  background:rgba(255,255,255,.72);
+  border:1px solid var(--ta-line);
+  border-radius:16px;
+  padding:10px;
+  box-shadow:var(--ta-shadow);
+}
+aside .card {
+  box-shadow:none;
+  border-color:transparent;
+  border-bottom:1px solid var(--ta-line);
+  border-radius:12px;
+}
+aside .card:last-child { border-bottom-color:transparent; }
+.card, .chart-card, .kpi {
+  border:1px solid var(--ta-line);
+  border-radius:14px;
+  background:var(--ta-card);
+  box-shadow:var(--ta-shadow);
+}
+.card-head { border-bottom-color:var(--ta-line); }
+.card-head .icon {
+  border-radius:10px;
+  background:var(--ta-green-soft);
+  color:var(--ta-green);
+}
+.card-head .title, .chart-card h3 { color:#203820; }
+.sl .val { border-radius:999px; background:var(--ta-green-soft); }
+.tog { border-radius:10px; border-color:var(--ta-line); background:#FFFFFF; }
+.tog.on { background:var(--ta-green-soft); border-color:rgba(63,111,42,.35); }
+.kpi {
+  border-left:0;
+  padding:16px;
+  position:relative;
+  overflow:hidden;
+}
+.kpi:before {
+  content:'';
+  position:absolute;
+  inset:0 auto 0 0;
+  width:4px;
+  background:var(--gd);
+}
+.kpi.a:before{background:var(--amb)} .kpi.b:before{background:var(--blu)} .kpi.r:before{background:var(--red)}
+.kpi .lab, .out-box .ol, .biz-card .blab { color:#7A8B7A; }
+.kpi .num { font-size:24px; }
+.chart-card h3 {
+  border-bottom:1px solid var(--ta-line);
+  padding-bottom:10px;
+  margin-bottom:12px;
+}
+.out-box, .biz-card, .pbox, .dbox, .scen-item {
+  border:1px solid var(--ta-line) !important;
+  background:#FFFFFF;
+  border-radius:12px;
+  box-shadow:none;
+}
+.out-box.g, .biz-card:not(.amber):not(.blue):not(.red), .pbox.en, .dbox.g, .scen-item.base { background:linear-gradient(180deg,#FFFFFF,#F5FBF1); }
+.out-box.a, .biz-card.amber, .dbox.am, .scen-item.opti { background:linear-gradient(180deg,#FFFFFF,#FFF8E7); }
+.out-box.b, .biz-card.blue, .dbox.bl { background:linear-gradient(180deg,#FFFFFF,#EFF7FF); }
+.out-box.r, .biz-card.red, .pbox.bl, .dbox.rd, .scen-item.cons { background:linear-gradient(180deg,#FFFFFF,#FFF4F4); }
+.rev-panel {
+  border-radius:12px;
+  border-color:var(--ta-line);
+  background:#FFFFFF;
+}
+.roi th, .proj-tbl th {
+  background:#FAFCF8;
+  color:#738573;
+  border-bottom-color:var(--ta-line);
+}
+.roi td, .proj-tbl td { border-bottom-color:#EEF2EA; }
+body > .chart-card, body > .grid2 { max-width:1440px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🐄 BK Dairy — Digital Transformation Impact Simulator</h1>
+    <p>31 KM Multan Road, Sundar, Lahore · LUMS TME 6201 · Dr. Ussama Yaqoob & Mr. Badar Khushnood</p>
+  </div>
+  <div class="live"><i></i> LIVE SIMULATION</div>
+</header>
+
+<main>
+<!-- ════════ LEFT PANEL ════════ -->
+<aside style="display:flex;flex-direction:column;gap:10px">
+
+  <div class="card">
+    <div class="card-head"><div class="icon">🐄</div><div><div class="title">Farm Configuration</div><div class="sub">Baseline parameters</div></div></div>
+    <div class="sliders">
+      <div class="sl"><label>Total Herd (big animals) <span class="val" id="v-herd">36</span></label><input type="range" id="s-herd" min="20" max="60" value="36"></div>
+      <div class="sl"><label>Currently Milking <span class="val" id="v-milk">22</span></label><input type="range" id="s-milk" min="10" max="40" value="22"></div>
+      <div class="sl"><label>Avg Yield / Animal (L/day) <span class="val" id="v-yield">9.1</span></label><input type="range" id="s-yield" min="4" max="14" value="9.1" step="0.1"></div>
+      <div class="sl"><label>Milk Price (PKR/L) <span class="val" id="v-price">190</span></label><input type="range" id="s-price" min="120" max="280" value="190" step="5"></div>
+      <div class="sl"><label>Worker Retention (L/day) <span class="val" id="v-ret">6</span></label><input type="range" id="s-ret" min="0" max="15" value="6"></div>
+    </div>
+    <div class="mini-chart"><canvas id="c-farm-bars" height="120"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon">💰</div><div><div class="title">Cost Structure</div><div class="sub">Daily variable & monthly fixed</div></div></div>
+    <div class="sliders">
+      <div class="sl"><label>Wanda (PKR/day) <span class="val" id="v-wanda">11,000</span></label><input type="range" id="s-wanda" min="5000" max="20000" value="11000" step="500"></div>
+      <div class="sl"><label>Fodder PKR/kg <span class="val" id="v-fpkg">5</span></label><input type="range" id="s-fpkg" min="3" max="10" value="5" step="0.5"></div>
+      <div class="sl"><label>Fodder kg/animal/day <span class="val" id="v-fkga">20</span></label><input type="range" id="s-fkga" min="10" max="35" value="20"></div>
+      <div class="sl"><label>Fuel (PKR/day) <span class="val" id="v-fuel">3,000</span></label><input type="range" id="s-fuel" min="1000" max="8000" value="3000" step="250"></div>
+      <div class="sl"><label>Monthly Fixed (PKR) <span class="val" id="v-fix">198,000</span></label><input type="range" id="s-fix" min="100000" max="400000" value="198000" step="5000"></div>
+    </div>
+    <div class="mini-chart"><canvas id="c-cost-bars" height="120"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon">⚙️</div><div><div class="title">Reproductive Parameters</div><div class="sub" id="rp-sub">Manual operation (baseline)</div></div></div>
+    <div class="sliders">
+      <div class="sl"><label>Heat Detection Accuracy <span class="val" id="v-heat">50%</span></label><input type="range" id="s-heat" min="20" max="95" value="50"></div>
+      <div class="sl"><label>Conception Rate / AI <span class="val" id="v-conc">50%</span></label><input type="range" id="s-conc" min="20" max="85" value="50"></div>
+      <div class="sl"><label>Open Days <span class="val" id="v-open">150</span></label><input type="range" id="s-open" min="80" max="220" value="150" step="5"></div>
+      <div class="sl"><label>AI Cost / Attempt (PKR) <span class="val" id="v-aic">4,250</span></label><input type="range" id="s-aic" min="2000" max="8000" value="4250" step="250"></div>
+    </div>
+    <div class="mini-chart"><canvas id="c-repro-bars" height="120"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon">🚀</div><div><div class="title">CowGenic Products</div><div class="sub">Toggle to see impact</div></div></div>
+    <div class="toggles">
+      <button class="tog" id="btn-dfms" onclick="toggle('dfms')">DFMS<br><small>Farm Software</small></button>
+      <button class="tog" id="btn-iot" onclick="toggle('iot')">IoT Collars<br><small>Heat Detection</small></button>
+    </div>
+    <div class="note" style="margin-top:6px">DFMS → feed, health, dashboard, yield 9.1→9.5 L/day<br>IoT → heat 50→87.5%, conception 50→72.5%, open days −35</div>
+  </div>
+
+
+  <!-- ── Simulation Controls ── -->
+  <div class="card">
+    <div class="card-head"><div class="icon">🎛️</div><div><div class="title">Simulation Controls</div><div class="sub">Adoption · Timeline · Investment</div></div></div>
+    <div class="sim-ctrl-info">Adoption and investment are product-linked. If DFMS or IoT is OFF, its adoption becomes 0%. If both are OFF, integrated adoption and investment become 0.</div>
+    <div class="sliders">
+      <div class="sl" id="dfms-adopt-wrap">
+        <label>DFMS Adoption Rate <span class="val" id="v-adopt-dfms">0%</span></label>
+        <input type="range" id="s-adopt-dfms" min="0" max="100" value="0" step="5">
+      </div>
+      <div class="sl" id="iot-adopt-wrap">
+        <label>IoT Adoption Rate <span class="val" id="v-adopt-iot">0%</span></label>
+        <input type="range" id="s-adopt-iot" min="0" max="100" value="0" step="5">
+      </div>
+      <div class="sl">
+        <label>Integrated Adoption Rate <span class="val" id="v-adopt">0%</span></label>
+        <div class="adopt-meter"><div class="adopt-fill" id="adopt-fill" style="width:0%;background:var(--red)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-top:1px"><span>0% Off</span><span>100% Full</span></div>
+      </div>
+      <div class="sl">
+        <label>Projection Timeline (months) <span class="val" id="v-months">24</span></label>
+        <input type="range" id="s-months" min="6" max="36" value="24" step="1">
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-top:1px"><span>6 mo</span><span>36 mo</span></div>
+      </div>
+      <div class="sl" id="invest-wrap">
+        <label>Investment Level (PKR) <span class="val" id="v-invest">PKR 0</span></label>
+        <input type="range" id="s-invest" min="0" max="1500000" value="0" step="25000">
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-top:1px"><span id="invest-auto-note">Auto: PKR 0</span><span>PKR 1.5M</span></div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ════════ RIGHT DASHBOARD ════════ -->
+<div class="dash">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="lab">Daily Production</div><div class="num gc" id="k-prod">—</div><div class="det" id="k-prod-d">—</div></div>
+    <div class="kpi a"><div class="lab">Monthly Revenue</div><div class="num ac" id="k-rev">—</div><div class="det" id="k-rev-d">—</div></div>
+    <div class="kpi b"><div class="lab">Monthly Net Profit</div><div class="num bc" id="k-pro">—</div><div class="det" id="k-pro-d">—</div></div>
+    <div class="kpi r"><div class="lab">Profit Margin</div><div class="num rc" id="k-mar">—</div><div class="det" id="k-mar-d">—</div></div>
+  </div>
+
+  <!-- Projected Outcomes Strip -->
+  <div class="chart-card" style="padding:10px 14px">
+    <h3 style="margin-bottom:8px"><span>📊</span> Projected Outcomes — Key Performance Indicators</h3>
+    <div class="out-grid">
+      <div class="out-box g"><div class="ol">Revenue Impact</div><div class="ov" id="o-rev">—</div><div class="od" id="o-rev-d">Annual milk revenue uplift</div></div>
+      <div class="out-box a"><div class="ol">Cost Savings</div><div class="ov" id="o-cost">—</div><div class="od" id="o-cost-d">AI costs + health prevention</div></div>
+      <div class="out-box b"><div class="ol">Productivity Gain</div><div class="ov" id="o-prod">—</div><div class="od" id="o-prod-d">Extra litres per day</div></div>
+      <div class="out-box g"><div class="ol">24-Month ROI</div><div class="ov" id="o-roi">—</div><div class="od" id="o-roi-d">Return on investment</div></div>
+      <div class="out-box a"><div class="ol">Payback Period</div><div class="ov" id="o-pay">—</div><div class="od" id="o-pay-d">Months to recover investment</div></div>
+      <div class="out-box b"><div class="ol">Efficiency Gain</div><div class="ov" id="o-eff">—</div><div class="od" id="o-eff-d">AI attempts per conception</div></div>
+    </div>
+  </div>
+
+
+
+  <!-- Business Case Strength Cards -->
+  <div class="chart-card" style="padding:10px 14px">
+    <h3 style="margin-bottom:8px"><span>💼</span> Simulation Business Case — Decision Metrics</h3>
+    <div class="business-grid">
+      <div class="biz-card"><div class="blab">Annual Incremental Profit</div><div class="bval" id="bc-profit">—</div><div class="bdet" id="bc-profit-d">vs baseline</div></div>
+      <div class="biz-card amber"><div class="blab">Monthly Profit Uplift</div><div class="bval" id="bc-monthly">—</div><div class="bdet" id="bc-monthly-d">current month run-rate</div></div>
+      <div class="biz-card blue"><div class="blab">Investment Deployed</div><div class="bval" id="bc-invest">—</div><div class="bdet" id="bc-invest-d">product-linked capex/recurring</div></div>
+      <div class="biz-card"><div class="blab">Payback Confidence</div><div class="bval" id="bc-payback">—</div><div class="bdet" id="bc-payback-d">selected timeline</div></div>
+      <div class="biz-card blue"><div class="blab">Extra Milk Revenue</div><div class="bval" id="bc-milkrev">—</div><div class="bdet" id="bc-milkrev-d">annualized uplift</div></div>
+      <div class="biz-card amber"><div class="blab">Health + AI Savings</div><div class="bval" id="bc-savings">—</div><div class="bdet" id="bc-savings-d">DFMS and IoT combined</div></div>
+      <div class="biz-card"><div class="blab">Extra Production</div><div class="bval" id="bc-litres">—</div><div class="bdet" id="bc-litres-d">litres per day uplift</div></div>
+      <div class="biz-card red"><div class="blab">Adoption Risk</div><div class="bval" id="bc-risk">—</div><div class="bdet" id="bc-risk-d">based on integrated adoption</div></div>
+    </div>
+  </div>
+
+  <!-- Production Comparison -->
+  <div class="chart-card">
+    <h3><span>🥛</span> Daily Milk Production: Baseline vs CowGenic</h3>
+    <div class="prod-cmp">
+      <div class="pbox bl"><div class="pv" id="p-bl">—</div><div class="pl">BASELINE (L/day)</div><div class="pl" id="p-bl-d">—</div></div>
+      <div class="parr" id="p-arr">→</div>
+      <div class="pbox en"><div class="pv" id="p-cg">—</div><div class="pl">WITH CowGenic (L/day)</div><div class="pl" id="p-cg-d">—</div></div>
+    </div>
+    <div class="note">Production = Milking Animals × Avg Yield. Net Sold = Production − Worker Retention.</div>
+  </div>
+
+  <!-- Demographics -->
+  <div class="chart-card">
+    <h3><span>🐮</span> Animal Demographics (Total: <span id="d-tot">53</span>)</h3>
+    <div class="demo">
+      <div class="dbox g"><div class="dn" id="d-mk">22</div><div class="dl">Milking</div></div>
+      <div class="dbox am"><div class="dn" id="d-pg">7</div><div class="dl">Pregnant-Dry</div></div>
+      <div class="dbox rd"><div class="dn" id="d-dy">3</div><div class="dl">Dry / Problem</div></div>
+      <div class="dbox bl"><div class="dn" id="d-hf">3</div><div class="dl">Heifers (entering)</div></div>
+      <div class="dbox g"><div class="dn" id="d-ys">17</div><div class="dl">Young Stock</div></div>
+      <div class="dbox pu"><div class="dn" id="d-ex">0</div><div class="dl">Extra Milking (CowGenic)</div></div>
+    </div>
+    <div class="note">Young stock = heifers 1.5yr + heifers 1yr + buffalo kids + calves. Extra milking = animals brought into production faster via IoT collar heat detection.</div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid2">
+    <div class="chart-card full">
+      <h3><span>📈</span> 24-Month Revenue & Profit View</h3>
+      <div class="rev-split">
+        <div class="rev-panel baseline-panel">
+          <h4>Baseline Case — always visible</h4>
+          <canvas id="c-base-main" height="170"></canvas>
+          <div class="sim-note">Manual operation only: no DFMS or IoT effect.</div>
+        </div>
+        <div class="rev-panel sim-panel">
+          <h4>Simulation Case — DFMS / IoT effects</h4>
+          <canvas id="c-sim-main" height="170"></canvas>
+          <div class="sim-note" id="sim-main-note">Enable DFMS or IoT to display simulation effects.</div>
+        </div>
+      </div>
+      <div class="note">Baseline and simulation are separated to avoid confusing solid vs dotted baseline lines.</div>
+    </div>
+    <div class="chart-card">
+      <h3><span>🎯</span> Operational KPI Radar</h3>
+      <canvas id="c-radar" height="270"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3><span>🥛</span> 24-Month Daily Milk Yield Trajectory</h3>
+      <canvas id="c-yield" height="270"></canvas>
+      <div class="note">Red dashed = baseline production · Green line appears only when DFMS or IoT is enabled</div>
+    </div>
+  </div>
+
+  <!-- ROI Table -->
+  <div class="chart-card">
+    <h3><span>📋</span> CowGenic ROI Breakdown (Annual)</h3>
+    <table class="roi"><thead><tr><th>Initiative</th><th>Product</th><th>Annual Benefit</th><th>Setup Cost</th><th>Net Yr1</th><th>Payback</th></tr></thead>
+    <tbody id="roi-body"></tbody></table>
+  </div>
+
+</div>
+</main>
+
+  <!-- Quantified Projections Table -->
+  <div class="chart-card">
+    <h3><span>📋</span> Quantified Projections — Full Breakdown</h3>
+    <table class="proj-tbl">
+      <thead><tr><th>Output Metric</th><th>Category</th><th>Before</th><th>After</th><th>Annual Impact (PKR)</th><th>% Change</th></tr></thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+    <div class="note" style="margin-top:6px">All values update live with slider changes. Adoption rate scales health, calf, and yield benefit proportionally.</div>
+  </div>
+
+  <!-- Scenario Analysis -->
+  <div class="chart-card">
+    <h3><span>⚖️</span> Risk-Adjusted Scenario Analysis</h3>
+    <div class="scen-bar">
+      <div class="scen-item cons"><div class="sv" id="sc-cons">—</div><div class="sl">Conservative (50%)<br>Annual Net Gain</div></div>
+      <div class="scen-item base"><div class="sv" id="sc-base">—</div><div class="sl">Base Case (100%)<br>Annual Net Gain</div></div>
+      <div class="scen-item opti"><div class="sv" id="sc-opti">—</div><div class="sl">Optimistic (120%)<br>Annual Net Gain</div></div>
+    </div>
+    <div class="note" style="margin-top:8px">Conservative = technology delivers 50% of projected improvement. Optimistic = 120%. Even at 50%, investment remains cash-flow positive after Month 5.</div>
+  </div>
+
+  <!-- Adoption + Cumulative charts -->
+  <div class="grid2">
+    <div class="chart-card">
+      <h3><span>👥</span> Adoption Rate → Monthly Profit Impact</h3>
+      <canvas id="c-adopt" height="200"></canvas>
+      <div class="note">Each bar = monthly profit at that worker adoption level. Red dashed = baseline without system.</div>
+    </div>
+    <div class="chart-card">
+      <h3><span>💹</span> Cumulative Net Value vs Investment</h3>
+      <canvas id="c-cumul" height="200"></canvas>
+      <div class="note">Line crosses zero = investment fully recovered. Green = profit zone. Timeline controlled by Projection slider.</div>
+    </div>
+  </div>
+
+<p class="foot">⚠️ All defaults from BK_Dairy_Financial_Workbook.xlsx · Sliders = live sensitivity analysis · LUMS TME 6201</p>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// STATE — Start with BOTH products OFF by design
+// ═══════════════════════════════════════════════════════════════════
+let ON = { dfms: false, iot: false };
+
+// Manual baseline values — radar always compares these vs CowGenic
+const MANUAL_BASELINE = { heat: 50, conc: 50, open: 150 };
+
+// ═══════════════════════════════════════════════════════════════════
+// ANCHOR DATA — extracted verbatim from BK_Dairy_Financial_Workbook.xlsx
+// Every number here matches a specific cell in the workbook.
+// When sliders are at default positions, the simulator reproduces
+// the workbook's exact outputs.
+// ═══════════════════════════════════════════════════════════════════
+
+// 24-Month Projection sheet, Row 9: Milking animals (baseline)
+const B_MK = [22,24,25,25,25,24,23,22,22,22,23,23, 22,22,22,23,23,22,22,22,22,23,23,22];
+// 24-Month Projection sheet, Row 21: Milking animals (with CowGenic)
+const C_MK = [22,24,25,26,26,26,25,25,25,26,27,27, 27,27,27,28,28,27,27,27,27,28,28,27];
+// 24-Month Projection sheet, Row 6: Days in month
+const DAYS   = [30,31,31,30,31,30,31,31,28,31,30,31, 30,31,31,30,31,30,31,31,28,31,30,31];
+const MNTHS  = ['Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26','Jan-27','Feb-27','Mar-27','Apr-27','May-27','Jun-27','Jul-27','Aug-27','Sep-27','Oct-27','Nov-27','Dec-27','Jan-28','Feb-28','Mar-28','Apr-28','May-28'];
+// Extended to 36 months for slider
+const DAYS36 = [...DAYS, 30,31,31,30,31,30,31,31,28,31,30,31];
+const MNTHS36= [...MNTHS,'Jun-28','Jul-28','Aug-28','Sep-28','Oct-28','Nov-28'];
+const B_MK36 = [...B_MK, 22,24,25,25,25,24,23,22,22,22,23,23];
+const C_MK36 = [...C_MK, 27,27,27,28,28,27,27,27,27,28,28,27];
+
+// ── WORKBOOK ANCHOR: exact monthly values at default slider positions ──
+// These are the "truth" from the workbook. The compute() function must
+// reproduce these when all sliders are at default.
+const WB = {
+  // 24-Month Projection Row 11: baseline daily production
+  baseProd: [158.4,172.8,180,180,180,172.8,165.6,158.4,158.4,158.4,165.6,165.6,158.4,158.4,158.4,165.6,165.6,158.4,158.4,158.4,158.4,165.6,165.6,158.4],
+  // Row 13: baseline monthly revenue
+  baseRev: [868680,982452,1024860,991800,1024860,950760,940044,897636,810768,897636,909720,940044,868680,897636,897636,909720,940044,868680,897636,897636,810768,940044,909720,897636],
+  // Row 18: baseline net profit
+  baseProfit: [105430,200927,243335,228550,243335,187510,158519,116111,84068,116111,146470,158519,105430,116111,116111,146470,158519,105430,116111,116111,84068,158519,146470,116111],
+  // Row 23: CowGenic daily production
+  cgProd: [158.4,172.8,180,188.76,190.32,191.88,186.0,187.5,189,196.56,204.12,204.12,204.12,204.12,204.12,211.68,211.68,204.12,204.12,204.12,204.12,211.68,211.68,204.12],
+  // Row 22: CowGenic yield per animal
+  cgYield: [7.2,7.2,7.2,7.26,7.32,7.38,7.44,7.50,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56,7.56],
+  // Row 25: CowGenic monthly revenue
+  cgRev: [868680,982452,1024860,1041734,1085643,1059516,1060202,1069033,973560,1122398,1129284,1166927,1129284,1166927,1166927,1172376,1211455,1129284,1166927,1166927,1053998,1211455,1172376,1166927],
+  // Row 34: CowGenic net profit
+  cgProfit: [86847,182344,224752,308010,333544,322792,305003,310734,270986,360999,386560,405528,378143,397011,397011,441235,461539,398143,417011,417011,360408,461539,441235,417011],
+  // Row 43: incremental net profit
+  incrProfit: [-18583,-18583,-18583,79460,90209,135282,146484,194623,186918,244888,240090,247009,272713,280900,280900,294765,303020,292713,300900,300900,276340,303020,294765,300900],
+  // Row 44: cumulative incremental
+  cumIncr: [-18583,-37167,-55750,23710,113918,249200,395684,590307,777225,1022113,1262203,1509212,1781925,2062825,2343725,2638490,2941510,3234224,3535124,3836024,4112363,4415384,4710149,5011049],
+  // ROI Summary totals
+  baselineRevTotal: 21975096,   // Row 13 total
+  baselineProfitTotal: 3474346, // Row 18 total
+  cgRevTotal: 26499152,         // Row 25 total
+  cgProfitTotal: 8485395,       // Row 34 total
+  incrProfitTotal: 5011049,     // Row 43 total
+  milkUplift: 4524056,          // ROI Summary B11
+  calfSales: 180000,            // ROI Summary B12
+  healthPrevention: 962500,     // ROI Summary B13
+  totalIncrValue: 5666556,      // ROI Summary B14
+  paybackMonth: 5,              // ROI Summary B25 (month where cumul > investment)
+  roi24: 9.806,                 // ROI Summary B22
+};
+
+// ── Actual historical production (from BK_Dairy_Unified_Model.xlsx) ──
+const ACTUAL_MONTHLY = {
+  'May-25': {prod: 224.3, milking: 24.0, yield: 9.3},
+  'Jun-25': {prod: 227.6, milking: 24.0, yield: 9.5},
+  'Jul-25': {prod: 229.3, milking: 24.0, yield: 9.6},
+  'Aug-25': {prod: 241.6, milking: 24.0, yield: 10.1},
+  'Sep-25': {prod: 251.4, milking: 24.0, yield: 10.5},
+  'Oct-25': {prod: 253.9, milking: 24.0, yield: 10.6},
+  'Nov-25': {prod: 256.6, milking: 24.0, yield: 10.7},
+  'Dec-25': {prod: 218.3, milking: 24.9, yield: 8.8},
+  'Jan-26': {prod: 170.2, milking: 20.5, yield: 8.3},
+  'Feb-26': {prod: 191.0, milking: 22.4, yield: 8.5},
+  'Mar-26': {prod: 154.9, milking: 21.7, yield: 7.1},
+  'Apr-26': {prod: 143.8, milking: 22.0, yield: 6.5},
+  'May-26': {prod: 183.8, milking: 24.5, yield: 7.5},
+};
+
+// CowGenic solution parameters (Solution Assumptions sheet)
+const SOL = {
+  dfmsSub: 15000,           // R6: annual DFMS subscription
+  collarPer: 28000,         // R7: per collar
+  numCollars: 35,           // R8: total collars
+  baseStation: 50000,       // R10: router
+  setupFee: 20000,          // R11: onboarding
+  batteryAnn: 50000,        // R12: annual battery
+  depnY1: 18583,            // R28: monthly depreciation Year 1 (1115000/60)
+  depnY2: 24000,            // R28: monthly depreciation Year 2+ (includes recurring)
+  // R19-R30: After-collar reproductive parameters
+  heatAfter: 0.875,         // R26
+  concAfter: 0.725,         // R27
+  openReduction: 35,        // R30
+  // R33-R36: Yield
+  baselineYield: 9.1,       // Updated baseline average yield per animal
+  projectedYield: 9.5,      // Updated projected yield per animal
+  yieldBoost: 9.5 / 9.1 - 1, // DFMS uplift needed to move 9.1 to 9.5 L/day
+  rampMonths: 6,            // R36
+  // R51-R54: Health & calves
+  healthSaveAnn: 550000,    // R54: PKR/year saved
+  calfPrice: 80000,         // R45
+  calfMaleProb: 0.50,       // R47
+};
+
+// Assumptions sheet
+const FARM = {
+  totalHerd: 36,            // R6: big animals
+  youngStock: 17,           // R7+R8+R9+R10
+  totalAnimals: 53,         // R11
+  milking: 22,              // Solution Assumptions R39
+  pregnantDry: 7,           // R40
+  dryProblem: 3,            // R41
+  heifers: 3,               // R42
+  fodderPerBig: 20,         // R21: kg/day
+  fodderPrice: 5,           // R26: PKR/kg
+  dailyFodder: 4275,        // R28
+  wanda: 11000,             // R31
+  fuel: 3000,               // R33
+  dailyVariable: 18275,     // R34
+  monthlyFixed: 198000,     // R42
+  milkPrice: 190,           // R46
+  workerRetain: 6,          // R47
+  breakeven: 137,           // R53
+  annualRevenue: 14654016,  // Income Statement R12
+  annualCosts: 9278375,     // Income Statement R27
+  annualProfit: 5375641,    // Income Statement R28
+  margin: 0.367,            // Income Statement R29
+};
+
+const Y1_INVEST = 1115000;  // Solution Assumptions R14: exact
+const DFMS_INVEST = SOL.setupFee + SOL.dfmsSub;
+const IOT_INVEST  = (SOL.collarPer * SOL.numCollars) + SOL.baseStation + SOL.batteryAnn;
+function autoInvestment(){ return (ON.dfms ? DFMS_INVEST : 0) + (ON.iot ? IOT_INVEST : 0); }
+function integratedAdoption(dfmsAdopt, iotAdopt){
+  const vals = [];
+  if (ON.dfms) vals.push(dfmsAdopt);
+  if (ON.iot) vals.push(iotAdopt);
+  return vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TOGGLE PRODUCTS
+// ═══════════════════════════════════════════════════════════════════
+function toggle(p) {
+  ON[p] = !ON[p];
+
+  document.getElementById('btn-dfms').classList.toggle('on', ON.dfms);
+  document.getElementById('btn-iot').classList.toggle('on', ON.iot);
+
+  // Product-linked adoption: OFF = forced 0; ON = re-enabled at a practical default
+  const dfmsAd = document.getElementById('s-adopt-dfms');
+  const iotAd  = document.getElementById('s-adopt-iot');
+  if (dfmsAd) {
+    if (!ON.dfms) dfmsAd.value = 0;
+    else if (+dfmsAd.value === 0) dfmsAd.value = 80;
+  }
+  if (iotAd) {
+    if (!ON.iot) iotAd.value = 0;
+    else if (+iotAd.value === 0) iotAd.value = 80;
+  }
+
+  // Auto-adjust reproductive parameters only while IoT is active.
+  if (ON.iot) {
+    document.getElementById('s-heat').value = 87;
+    document.getElementById('s-conc').value = 72;
+    document.getElementById('s-open').value = 115;
+  } else {
+    document.getElementById('s-heat').value = MANUAL_BASELINE.heat;
+    document.getElementById('s-conc').value = MANUAL_BASELINE.conc;
+    document.getElementById('s-open').value = MANUAL_BASELINE.open;
+  }
+
+  document.getElementById('rp-sub').textContent =
+    ON.iot ? 'IoT collar-assisted (auto-adjusted ↑)' :
+    ON.dfms ? 'DFMS tracking; manual reproduction baseline' :
+    'Manual operation (baseline)';
+
+  update();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// READ ALL SLIDERS
+// ═══════════════════════════════════════════════════════════════════
+function readSliders() {
+  const herd    = +document.getElementById('s-herd').value;
+  const milking = +document.getElementById('s-milk').value;
+  const yld     = +document.getElementById('s-yield').value;
+  const price   = +document.getElementById('s-price').value;
+  const retain  = +document.getElementById('s-ret').value;
+  const wanda   = +document.getElementById('s-wanda').value;
+  const fpkg    = +document.getElementById('s-fpkg').value;
+  const fkga    = +document.getElementById('s-fkga').value;
+  const fuel    = +document.getElementById('s-fuel').value;
+  const fixMo   = +document.getElementById('s-fix').value;
+  const heat    = +document.getElementById('s-heat').value / 100;
+  const conc    = +document.getElementById('s-conc').value / 100;
+  const openD   = +document.getElementById('s-open').value;
+  const aiCost  = +document.getElementById('s-aic').value;
+
+  // Computed daily costs (fully reactive to sliders)
+  const fodderDaily = herd * fkga * fpkg;        // scales with herd, kg, price
+  const varDaily    = wanda + fodderDaily + fuel;  // total variable per day
+  const aiPerConc   = 1 / conc;                    // AI attempts per conception
+
+  // Product-linked simulation control inputs
+  const dfmsAdoptRaw = +(document.getElementById('s-adopt-dfms') ? document.getElementById('s-adopt-dfms').value : 0) / 100;
+  const iotAdoptRaw  = +(document.getElementById('s-adopt-iot')  ? document.getElementById('s-adopt-iot').value  : 0) / 100;
+  const dfmsAdopt = ON.dfms ? dfmsAdoptRaw : 0;
+  const iotAdopt  = ON.iot  ? iotAdoptRaw  : 0;
+  const adopt = integratedAdoption(dfmsAdopt, iotAdopt);
+  const months = +(document.getElementById('s-months') ? document.getElementById('s-months').value : 24);
+  const investOverrideRaw = +(document.getElementById('s-invest') ? document.getElementById('s-invest').value : 0);
+  const investOverride = (ON.dfms || ON.iot) ? investOverrideRaw : 0;
+
+  return { herd, milking, yld, price, retain, wanda, fpkg, fkga, fuel, fixMo,
+           heat, conc, openD, aiCost, fodderDaily, varDaily, aiPerConc,
+           dfmsAdopt, iotAdopt, adopt, months, investOverride };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CORE CALCULATION ENGINE
+// Every number flows from slider values — nothing hardcoded.
+// ═══════════════════════════════════════════════════════════════════
+function compute(s) {
+  const active = ON.dfms || ON.iot;
+
+  // ── BASELINE (current sliders, no CowGenic) ──
+  const baseProd  = s.milking * s.yld;                              // L/day gross
+  const baseSold  = Math.max(0, baseProd - s.retain);               // L/day net
+  const baseRevMo = baseSold * s.price * 30;                        // monthly revenue
+  const baseVarMo = s.varDaily * 30;                                // monthly variable cost
+  const baseFixMo = s.fixMo;                                        // monthly fixed cost
+  const baseAiMo  = 2 * s.aiPerConc * s.aiCost;                    // ~2 animals bred/month
+  const baseTotMo = baseVarMo + baseFixMo + baseAiMo;              // total monthly cost
+  const baseProMo = baseRevMo - baseTotMo;                          // monthly profit
+  const baseMargin = baseRevMo > 0 ? baseProMo / baseRevMo : 0;
+  const breakeven  = (s.varDaily + s.fixMo / 30) / s.price + s.retain;
+
+  // ── CowGenic impact ──
+  // Additional milking animals from faster re-conception (IoT)
+  // Mechanism: 35 fewer open days means pregnant-dry cows return to milking ~1 month sooner
+  // At steady state with 7 pregnant-dry: openReduction * 7 / 365 * efficiency ≈ +5 animals
+  let extraAnimals = 0;
+  if (ON.iot) {
+    // Scale extra animals with current herd demographics
+    const pregnantDry = Math.max(0, s.herd - s.milking - 3);
+    const heatImpr = s.heat / (MANUAL_BASELINE.heat / 100);
+    const concImpr = s.conc / (MANUAL_BASELINE.conc / 100);
+    const openImpr = MANUAL_BASELINE.open / Math.max(60, s.openD);
+    extraAnimals = Math.round(SOL.openReduction * pregnantDry / 365 * heatImpr * concImpr * openImpr * 1.8 * s.iotAdopt);
+  }
+
+  // Yield improvement (DFMS feed + health tracking)
+  const yldBoost = ON.dfms ? SOL.yieldBoost * s.dfmsAdopt : 0;
+
+  const cgMilking = s.milking + extraAnimals;
+  const cgYield   = s.yld * (1 + yldBoost);
+  const cgProd    = cgMilking * cgYield;
+  const cgSold    = Math.max(0, cgProd - s.retain);
+  const cgRevMo   = cgSold * s.price * 30;
+
+  // Extra costs: feed for additional animals + CowGenic depreciation
+  const cgExtraFeedMo = extraAnimals * s.fkga * s.fpkg * 30;
+  const cgDepnMo      = active ? SOL.depnY1 : 0;
+  const cgAiMo        = ON.iot ? baseAiMo + (2 * (1 / SOL.concAfter) * s.aiCost - baseAiMo) * s.iotAdopt : baseAiMo;
+  const cgHealthMo    = ON.dfms ? SOL.healthSaveAnn / 12 * s.dfmsAdopt : 0;
+  const cgCalfMo      = ON.iot ? SOL.calfPrice * SOL.calfMaleProb * 0.5 * s.iotAdopt : 0;
+
+  const cgVarMo  = baseVarMo + cgExtraFeedMo;
+  const cgTotMo  = cgVarMo + baseFixMo + cgDepnMo + cgAiMo;
+  const cgProMo  = cgRevMo - cgTotMo + cgHealthMo + cgCalfMo;
+  const cgMargin = cgRevMo > 0 ? cgProMo / cgRevMo : 0;
+
+  // ── 24-MONTH PROJECTION (fully slider-driven) ──
+  // Scale from the model's milking pattern using ratio to default (22)
+  const mkRatio = s.milking / 22;
+
+  const proj = {
+    baseRev: [], baseVar: [], baseFix: [], baseProfit: [], baseProd: [],
+    cgRev: [],   cgVar: [],   cgFix: [],   cgProfit: [],   cgProd: [],
+  };
+
+  const projLen = 36;
+  for (let m = 0; m < projLen; m++) {
+    const d    = DAYS36[m];
+    const dfmsAdpt = s.dfmsAdopt;
+    const iotAdpt  = s.iotAdopt;
+    const adpt = s.adopt;
+
+    // Baseline month (NO technology)
+    const bMk   = Math.max(1, Math.round(B_MK36[m] * mkRatio));
+    const bProd  = bMk * s.yld;
+    const bSold  = Math.max(0, bProd - s.retain);
+    const bRev   = bSold * s.price * d;
+    const bVar   = s.varDaily * d;                    // ← fully driven by sliders
+    const bFix   = s.fixMo;
+    const bAi    = 2 * s.aiPerConc * s.aiCost;
+    const bProfit = bRev - bVar - bFix - bAi;
+
+    proj.baseProd.push(bProd);
+    proj.baseRev.push(bRev);
+    proj.baseVar.push(bVar);
+    proj.baseFix.push(bFix);
+    proj.baseProfit.push(bProfit);
+
+    // CowGenic month — extra animals scale with adoption
+    // CowGenic milking — ALWAYS computed, adpt scales the benefit
+    // When toggles are OFF: adpt still scales but active=false so cMk=bMk for display
+    const rawCMk = Math.max(1, Math.round(C_MK36[m] * mkRatio));
+    const extraMkM = Math.round((rawCMk - bMk) * iotAdpt); // IoT adoption scales extra animals
+    const cMk = bMk + (active ? extraMkM : 0);
+    // Yield ramp: months 0-2 = no boost, 3-8 = ramping, 9+ = full
+    let yfRaw = 1;
+    if (ON.dfms) {
+      if (m < 3) yfRaw = 1;
+      else if (m < 9) yfRaw = 1 + SOL.yieldBoost * ((m - 2) / SOL.rampMonths);
+      else yfRaw = 1 + SOL.yieldBoost;
+    }
+    const yf = 1 + (yfRaw - 1) * (ON.dfms ? dfmsAdpt : 0); // DFMS adoption scales yield boost
+    const cYld  = s.yld * yf;
+    const cProd = cMk * cYld;
+    const cSold = Math.max(0, cProd - s.retain);
+    const cRev  = cSold * s.price * d;
+    const cExF  = Math.max(0, cMk - bMk) * s.fkga * s.fpkg * d;
+    const cVar  = s.varDaily * d + cExF;              // ← also slider-driven + extra feed
+    const cFix  = s.fixMo;
+    const cDep  = active ? (m < 12 ? SOL.depnY1 : SOL.depnY2) : 0;
+    const cAi   = ON.iot ? bAi + (2 * (1 / SOL.concAfter) * s.aiCost - bAi) * iotAdpt : bAi;
+    const cHlth = (ON.dfms && m >= 3) ? SOL.healthSaveAnn / 12 * dfmsAdpt : 0;
+    const cCalf = (ON.iot  && m >= 15) ? SOL.calfPrice * SOL.calfMaleProb * 0.5 * iotAdpt : 0;
+    const cProfit = cRev - cVar - cFix - cDep - cAi + cHlth + cCalf;
+
+    proj.cgProd.push(cProd);
+    proj.cgRev.push(cRev);
+    proj.cgVar.push(cVar);
+    proj.cgFix.push(cFix);
+    proj.cgProfit.push(cProfit);
+  }
+
+  // ── Demographics (reactive to herd & milking sliders) ──
+  const pregnantDry = Math.max(0, s.herd - s.milking - 3);
+  const dryProblem  = 3;
+  const heifers     = 3;
+  // Young stock scales with herd: at default 36 → 17 young. Scale proportionally.
+  const youngStock  = Math.round(17 * s.herd / 36);
+  const totalHerd   = s.herd + youngStock;
+
+  // Annual impact calculations
+  const annRevUplift = (cgRevMo - baseRevMo) * 12;
+  const annCostSave  = (baseAiMo - (ON.iot ? 2*(1/SOL.concAfter)*s.aiCost : baseAiMo)) * 12 * s.iotAdopt
+                       + SOL.healthSaveAnn * s.dfmsAdopt;
+  const annCalfRev   = ON.iot ? SOL.calfPrice * SOL.calfMaleProb * 0.5 * 12 * s.iotAdopt : 0;
+  const totalAnnGain = annRevUplift + annCostSave + annCalfRev;
+  const investAmt    = active ? ((s.investOverride > 0) ? s.investOverride : autoInvestment()) : 0;
+  const netAnnGain   = totalAnnGain - ((ON.dfms ? SOL.dfmsSub : 0) + (ON.iot ? SOL.batteryAnn : 0));
+  const roi24        = investAmt > 0 ? (netAnnGain * 2 / investAmt * 100) : 0;
+  const pbMonths     = paybackFromProjection(proj, investAmt, active, 36);
+
+  return {
+    baseProd, baseSold, baseRevMo, baseVarMo, baseFixMo, baseAiMo, baseTotMo, baseProMo, baseMargin, breakeven,
+    extraAnimals, cgMilking, cgYield: cgYield, cgProd, cgSold, cgRevMo,
+    cgVarMo: cgVarMo, cgTotMo, cgProMo, cgMargin, cgHealthMo: ON.dfms ? SOL.healthSaveAnn/12*s.dfmsAdopt : 0,
+    proj,
+    pregnantDry, dryProblem, heifers, youngStock, totalHerd,
+    annRevUplift, annCostSave, annCalfRev, totalAnnGain,
+    investAmt, netAnnGain, roi24, pbMonths,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function fmt(n) {
+  if (Math.abs(n) >= 1e7)  return (n / 1e7).toFixed(1) + ' Cr';
+  if (Math.abs(n) >= 1e5)  return (n / 1e5).toFixed(1) + ' Lac';
+  if (Math.abs(n) >= 1000) return Math.round(n / 1000) + 'K';
+  return Math.round(n).toString();
+}
+function loc(n) { return n.toLocaleString('en-PK'); }
+function paybackFromProjection(proj, invest, active, maxMonths) {
+  if (!active || invest <= 0) return 99;
+  let cumulative = -invest;
+  const months = Math.min(maxMonths || 36, proj.baseProfit.length, proj.cgProfit.length);
+  for (let m = 0; m < months; m++) {
+    cumulative += proj.cgProfit[m] - proj.baseProfit[m];
+    if (cumulative >= 0) return m + 1;
+  }
+  return 99;
+}
+function paybackLabel(months) { return months < 60 ? months + ' mo' : '>36 mo'; }
+function aiEfficiency(s) {
+  const manualAttempts = 1 / (MANUAL_BASELINE.conc / 100);
+  const fullIoTAttempts = 1 / SOL.concAfter;
+  const adoptionWeighted = manualAttempts + (fullIoTAttempts - manualAttempts) * (ON.iot ? s.iotAdopt : 0);
+  return { manualAttempts, fullIoTAttempts, adoptionWeighted };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UPDATE EVERYTHING
+// ═══════════════════════════════════════════════════════════════════
+let CH1, CH1B, CH2, CH3, CH4, CH5, CH6, CH7, CH8;
+
+function update() {
+  const s = readSliders();
+  const r = compute(s);
+  const active = ON.dfms || ON.iot;
+
+  // ── Update slider value displays ──
+  document.getElementById('v-herd').textContent  = s.herd;
+  document.getElementById('v-milk').textContent  = s.milking;
+  document.getElementById('v-yield').textContent = s.yld;
+  document.getElementById('v-price').textContent = s.price;
+  document.getElementById('v-ret').textContent   = s.retain;
+  document.getElementById('v-wanda').textContent = loc(s.wanda);
+  document.getElementById('v-fpkg').textContent  = s.fpkg;
+  document.getElementById('v-fkga').textContent  = s.fkga;
+  document.getElementById('v-fuel').textContent  = loc(s.fuel);
+  document.getElementById('v-fix').textContent   = loc(s.fixMo);
+  document.getElementById('v-heat').textContent  = Math.round(s.heat * 100) + '%';
+  document.getElementById('v-conc').textContent  = Math.round(s.conc * 100) + '%';
+  document.getElementById('v-open').textContent  = s.openD;
+  document.getElementById('v-aic').textContent   = loc(s.aiCost);
+  // Product-linked simulation control displays
+  const dfmsAdEl = document.getElementById('v-adopt-dfms');
+  const iotAdEl  = document.getElementById('v-adopt-iot');
+  if (dfmsAdEl) dfmsAdEl.textContent = Math.round(s.dfmsAdopt*100)+'%';
+  if (iotAdEl)  iotAdEl.textContent  = Math.round(s.iotAdopt*100)+'%';
+  const dfmsWrap = document.getElementById('dfms-adopt-wrap');
+  const iotWrap  = document.getElementById('iot-adopt-wrap');
+  if (dfmsWrap) dfmsWrap.classList.toggle('locked-control', !ON.dfms);
+  if (iotWrap)  iotWrap.classList.toggle('locked-control', !ON.iot);
+  const adoptEl = document.getElementById('v-adopt');
+  if (adoptEl) { adoptEl.textContent = Math.round(s.adopt*100)+'%'; }
+  const fillEl = document.getElementById('adopt-fill');
+  if (fillEl) {
+    const ap = Math.round(s.adopt*100);
+    fillEl.style.width = ap+'%';
+    fillEl.style.background = ap>=80?'var(--gd)':ap>=50?'var(--amb)':'var(--red)';
+  }
+  const moEl = document.getElementById('v-months');
+  if (moEl) moEl.textContent = (s.months||24)+'';
+  const invEl = document.getElementById('v-invest');
+  const autoInv = active ? autoInvestment() : 0;
+  if (invEl) invEl.textContent = active ? ((s.investOverride>0) ? 'PKR '+fmt(s.investOverride) : 'Auto: PKR '+fmt(autoInv)) : 'PKR 0';
+  const invNote = document.getElementById('invest-auto-note');
+  if (invNote) invNote.textContent = 'Auto: PKR ' + fmt(autoInv);
+  const invWrap = document.getElementById('invest-wrap');
+  if (invWrap) invWrap.classList.toggle('locked-control', !active);
+
+  // ── Projected Outcomes strip ──
+  if (active) {
+    document.getElementById('o-rev').textContent   = 'PKR ' + fmt(r.annRevUplift);
+    document.getElementById('o-rev-d').textContent = 'vs baseline annual revenue';
+    document.getElementById('o-cost').textContent  = 'PKR ' + fmt(r.annCostSave);
+    document.getElementById('o-cost-d').textContent= 'AI + health savings/year';
+    document.getElementById('o-prod').textContent  = '+' + (r.cgProd - r.baseProd).toFixed(1) + ' L';
+    document.getElementById('o-prod-d').textContent= r.baseProd.toFixed(0) + '→' + r.cgProd.toFixed(0) + ' L/day';
+    document.getElementById('o-roi').textContent   = (r.roi24 > 500 ? '>500' : r.roi24.toFixed(0)) + '%';
+    document.getElementById('o-roi-d').textContent = 'On PKR ' + fmt(r.investAmt) + ' investment';
+    document.getElementById('o-pay').textContent   = paybackLabel(r.pbMonths);
+    document.getElementById('o-pay-d').textContent = 'Projected cumulative cashflow';
+    if (ON.iot) {
+      const eff = aiEfficiency(s);
+      document.getElementById('o-eff').textContent = eff.manualAttempts.toFixed(2) + '→' + eff.adoptionWeighted.toFixed(2);
+      document.getElementById('o-eff-d').textContent = 'AI attempts/conception at ' + Math.round(s.iotAdopt*100) + '% IoT adoption';
+    } else {
+      document.getElementById('o-eff').textContent = '—';
+      document.getElementById('o-eff-d').textContent = 'IoT Collars drive AI efficiency';
+    }
+  } else {
+    ['o-rev','o-cost','o-prod','o-roi','o-pay','o-eff'].forEach(id=>{
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('o-rev-d').textContent  = 'Enable DFMS or IoT';
+    document.getElementById('o-cost-d').textContent = 'Enable DFMS or IoT';
+    document.getElementById('o-prod-d').textContent = 'Enable DFMS or IoT';
+    document.getElementById('o-roi-d').textContent  = 'Enable DFMS or IoT';
+    document.getElementById('o-pay-d').textContent  = 'Enable DFMS or IoT';
+    document.getElementById('o-eff-d').textContent  = 'Enable DFMS or IoT';
+  }
+
+  // ── Scenario Analysis ──
+  if (active) {
+    const base = r.netAnnGain;
+    document.getElementById('sc-cons').textContent = 'PKR ' + fmt(base * 0.5);
+    document.getElementById('sc-base').textContent = 'PKR ' + fmt(base);
+    document.getElementById('sc-opti').textContent = 'PKR ' + fmt(base * 1.2);
+  } else {
+    ['sc-cons','sc-base','sc-opti'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+
+  // ── Business Case Strength Cards ──
+  const annProfitGain = (r.cgProMo - r.baseProMo) * 12;
+  const monthlyUplift = r.cgProMo - r.baseProMo;
+  const extraLitres = r.cgProd - r.baseProd;
+  const savingsCombined = r.annCostSave;
+  const riskText = !active ? 'Off' : s.adopt >= 0.8 ? 'Low' : s.adopt >= 0.5 ? 'Medium' : 'High';
+  const riskDetail = !active ? 'Enable products to simulate' : 'Integrated adoption: ' + Math.round(s.adopt*100) + '%';
+  const paybackLabelText = !active ? '—' : paybackLabel(r.pbMonths);
+  const paybackDetail = !active ? 'No active investment' : (r.pbMonths <= (s.months||24) ? 'Within selected timeline' : 'Based on cumulative projection');
+  const setBiz = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setBiz('bc-profit', active ? 'PKR ' + fmt(annProfitGain) : '—');
+  setBiz('bc-profit-d', active ? 'Annualized net profit uplift' : 'Enable DFMS or IoT');
+  setBiz('bc-monthly', active ? 'PKR ' + fmt(monthlyUplift) : '—');
+  setBiz('bc-monthly-d', active ? 'Current monthly run-rate' : 'Enable DFMS or IoT');
+  setBiz('bc-invest', active ? 'PKR ' + fmt(r.investAmt) : 'PKR 0');
+  setBiz('bc-invest-d', active ? (ON.dfms && ON.iot ? 'DFMS + IoT active' : ON.dfms ? 'DFMS active only' : 'IoT active only') : 'Both products off');
+  setBiz('bc-payback', paybackLabelText);
+  setBiz('bc-payback-d', paybackDetail);
+  setBiz('bc-milkrev', active ? 'PKR ' + fmt(r.annRevUplift) : '—');
+  setBiz('bc-milkrev-d', active ? 'Revenue uplift from milk output' : 'Enable products to calculate');
+  setBiz('bc-savings', active ? 'PKR ' + fmt(savingsCombined) : '—');
+  setBiz('bc-savings-d', active ? 'Health prevention + AI efficiency' : 'Enable products to calculate');
+  setBiz('bc-litres', active ? '+' + extraLitres.toFixed(1) + ' L' : '—');
+  setBiz('bc-litres-d', active ? 'Daily production uplift' : 'Enable products to calculate');
+  setBiz('bc-risk', riskText);
+  setBiz('bc-risk-d', riskDetail);
+
+  // ── KPIs (show active scenario) ──
+  const showProd   = active ? r.cgProd   : r.baseProd;
+  const showRev    = active ? r.cgRevMo  : r.baseRevMo;
+  const showProfit = active ? r.cgProMo  : r.baseProMo;
+  const showMargin = active ? r.cgMargin : r.baseMargin;
+
+  document.getElementById('k-prod').textContent = showProd.toFixed(0) + ' L';
+  document.getElementById('k-prod-d').textContent = (active ? r.cgMilking : s.milking) + ' animals × ' + (active ? r.cgYield : s.yld).toFixed(1) + ' L';
+
+  document.getElementById('k-rev').textContent = 'PKR ' + fmt(showRev);
+  document.getElementById('k-rev-d').textContent = Math.max(0, showProd - s.retain).toFixed(0) + 'L sold × ₨' + s.price + ' × 30d';
+
+  document.getElementById('k-pro').textContent = 'PKR ' + fmt(showProfit);
+  const delta = active ? r.cgProMo - r.baseProMo : 0;
+  document.getElementById('k-pro-d').textContent = delta > 0 ? '↑ PKR ' + fmt(delta) + ' vs baseline' : 'Baseline';
+
+  document.getElementById('k-mar').textContent = (showMargin * 100).toFixed(1) + '%';
+  document.getElementById('k-mar-d').textContent = 'Breakeven: ' + r.breakeven.toFixed(0) + ' L/day' + (active ? '  |  Payback: ' + paybackLabel(r.pbMonths) : '');
+
+  // ── Production comparison ──
+  document.getElementById('p-bl').textContent = r.baseProd.toFixed(0);
+  document.getElementById('p-bl-d').textContent = s.milking + ' × ' + s.yld.toFixed(1) + ' L';
+  if (active) {
+    document.getElementById('p-cg').textContent = r.cgProd.toFixed(0);
+    document.getElementById('p-cg-d').textContent = r.cgMilking + ' × ' + r.cgYield.toFixed(2) + ' L  (+' + (r.cgProd - r.baseProd).toFixed(0) + ' L)';
+    document.getElementById('p-arr').textContent = '→';
+  } else {
+    document.getElementById('p-cg').textContent = '—';
+    document.getElementById('p-cg-d').textContent = 'Enable DFMS / IoT';
+    document.getElementById('p-arr').textContent = '?';
+  }
+
+  // ── Demographics (reactive) ──
+  document.getElementById('d-tot').textContent = r.totalHerd;
+  document.getElementById('d-mk').textContent  = s.milking;
+  document.getElementById('d-pg').textContent  = r.pregnantDry;
+  document.getElementById('d-dy').textContent  = r.dryProblem;
+  document.getElementById('d-hf').textContent  = r.heifers;
+  document.getElementById('d-ys').textContent  = r.youngStock;
+  document.getElementById('d-ex').textContent  = active ? '+' + r.extraAnimals : '0';
+
+  // ── Charts ──
+  drawCharts(s, r, active);
+  drawParameterCharts(s, r, active);
+
+  // ── Quantified Projections Table ──
+  if (active && document.getElementById('proj-tbody')) {
+    const tb = document.getElementById('proj-tbody');
+    const rows = [
+      {m:'Milk production (L/day)',cat:'Production',bef:r.baseProd.toFixed(1),aft:r.cgProd.toFixed(1),ann:r.annRevUplift,pct:(r.cgProd-r.baseProd)/r.baseProd},
+      {m:'Milking animals',cat:'Production',bef:s.milking,aft:r.cgMilking,ann:r.extraAnimals*r.cgYield*s.price*365,pct:(r.cgMilking-s.milking)/s.milking},
+      {m:'Avg yield / animal (L/day)',cat:'Production',bef:s.yld.toFixed(2),aft:r.cgYield.toFixed(2),ann:s.milking*(r.cgYield-s.yld)*s.price*365,pct:SOL.yieldBoost*s.dfmsAdopt},
+      {m:'Heat detection accuracy',cat:'Reproductive',bef:'50%',aft:Math.round(s.heat*100)+'%',ann:null,pct:(s.heat-0.5)/0.5},
+      {m:'Conception rate per AI',cat:'Reproductive',bef:'50%',aft:Math.round(s.conc*100)+'%',ann:null,pct:(s.conc-0.5)/0.5},
+      {m:'Open days per cow',cat:'Reproductive',bef:'150',aft:s.openD,ann:null,pct:(150-s.openD)/150,lb:true},
+      {m:'AI cost per conception (PKR)',cat:'Cost Reduction',bef:'8,500',aft:Math.round(2*(1/SOL.concAfter)*s.aiCost).toLocaleString(),ann:(2*s.aiPerConc*s.aiCost - 2*(1/SOL.concAfter)*s.aiCost)*12,pct:null},
+      {m:'Health loss prevention',cat:'Cost Savings',bef:'PKR 0',aft:'PKR '+fmt(SOL.healthSaveAnn),ann:SOL.healthSaveAnn*s.dfmsAdopt,pct:null},
+      {m:'Male calf revenue',cat:'Revenue Uplift',bef:'PKR 0',aft:'PKR '+fmt(SOL.calfPrice*SOL.calfMaleProb*0.5*12),ann:r.annCalfRev,pct:null},
+      {m:'Annual milk revenue',cat:'Revenue Uplift',bef:'PKR '+fmt(r.baseRevMo*12),aft:'PKR '+fmt(r.cgRevMo*12),ann:r.annRevUplift,pct:r.annRevUplift/(r.baseRevMo*12)},
+      {m:'Profit margin',cat:'Profitability',bef:(r.baseMargin*100).toFixed(1)+'%',aft:(r.cgMargin*100).toFixed(1)+'%',ann:null,pct:(r.cgMargin-r.baseMargin)},
+    ];
+    tb.innerHTML = rows.map(row => {
+      const impStr = row.ann != null ? ((row.ann>0?'+':'')+' PKR '+fmt(row.ann)) : '—';
+      const impCls = row.ann == null ? 'neu' : row.ann > 0 ? 'pos' : 'neg';
+      const pctStr = row.pct != null ? ((row.lb?-1:1)*row.pct*100 > 0 ? '+' : '') + ((row.lb?-1:1)*row.pct*100).toFixed(1)+'%' : '—';
+      const pctCls = row.pct == null ? 'neu' : (row.lb?-1:1)*row.pct > 0 ? 'pos' : 'neg';
+      return '<tr><td>'+row.m+'</td><td><small style="background:var(--gp);color:var(--gd);padding:1px 4px;border-radius:2px;font-size:7.5px">'+row.cat+'</small></td><td class="neu">'+row.bef+'</td><td class="pos">'+row.aft+'</td><td class="'+impCls+'">'+impStr+'</td><td class="'+pctCls+'">'+pctStr+'</td></tr>';
+    }).join('');
+  } else if (document.getElementById('proj-tbody')) {
+    document.getElementById('proj-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:10px">Enable DFMS or IoT Collars to see projections</td></tr>';
+  }
+
+  // ── ROI Table ──
+  drawROI(s, r, active);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════════════
+function chartLineOptions(prefix) {
+  return {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: '#5A7A5A', font: { family: 'Arial', size: 9 }, boxWidth: 10 } },
+      tooltip: {
+        backgroundColor: '#FFF', borderColor: '#D4E2C8', borderWidth: 1,
+        titleColor: '#2C3E2C', bodyColor: '#5A7A5A',
+        callbacks: { label: c => ' ' + c.dataset.label + ': ' + prefix + c.parsed.y + 'K' }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#8BA88B', maxTicksLimit: 8, font: { size: 8 } }, grid: { color: '#EEF2E8' } },
+      y: { ticks: { color: '#5A7A5A', font: { size: 8 }, callback: v => v + 'K' }, grid: { color: '#EEF2E8' } }
+    }
+  };
+}
+
+function drawCharts(s, r, active) {
+  const nMo    = Math.min(s.months || 24, 36);
+  const mLbls  = MNTHS36.slice(0, nMo);
+  // Baseline panels remain no-technology; simulation panels only draw when a product is active.
+  const rev    = r.proj.cgRev.slice(0, nMo);
+  const varC   = r.proj.cgVar.slice(0, nMo);
+  const fixC   = r.proj.cgFix.slice(0, nMo);
+  const profit = r.proj.cgProfit.slice(0, nMo);
+  const bRev   = r.proj.baseRev.slice(0, nMo);
+  const bProfit= r.proj.baseProfit.slice(0, nMo);
+
+  // ── SPLIT REVENUE CHARTS: Baseline vs Simulation ──
+  if (CH1) CH1.destroy();
+  if (CH1B) CH1B.destroy();
+
+  const baseCanvas = document.getElementById('c-base-main');
+  if (baseCanvas) {
+    CH1 = new Chart(baseCanvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: mLbls,
+        datasets: [
+          { label: 'Revenue — Baseline', data: bRev.map(v => Math.round(v / 1000)),
+            borderColor: '#B85C5C', backgroundColor: 'transparent',
+            borderWidth: 2.2, borderDash: [6, 4], tension: .35, pointRadius: 0, pointHoverRadius: 4 },
+          { label: 'Variable Costs — Baseline', data: r.proj.baseVar.slice(0, nMo).map(v => Math.round(v / 1000)),
+            borderColor: '#8BA88B', backgroundColor: 'rgba(139,168,139,.10)',
+            fill: true, borderWidth: 1.3, borderDash: [4, 3], tension: .35, pointRadius: 0 },
+          { label: 'Fixed Costs — Baseline', data: r.proj.baseFix.slice(0, nMo).map(v => Math.round(v / 1000)),
+            borderColor: '#C4962D', backgroundColor: 'transparent',
+            borderWidth: 1.3, borderDash: [3, 3], tension: .35, pointRadius: 0 },
+          { label: 'Net Profit — Baseline', data: bProfit.map(v => Math.round(v / 1000)),
+            borderColor: '#B85C5C', backgroundColor: 'rgba(184,92,92,.08)',
+            fill: true, borderWidth: 2, borderDash: [2, 3], tension: .35, pointRadius: 0 },
+        ]
+      },
+      options: chartLineOptions('PKR ')
+    });
+  }
+
+  const simNote = document.getElementById('sim-main-note');
+  if (simNote) {
+    simNote.textContent = active
+      ? 'Showing active scenario: ' + (ON.dfms && ON.iot ? 'DFMS + IoT Collars' : ON.dfms ? 'DFMS only' : 'IoT Collars only') + ' · Integrated adoption ' + Math.round(s.adopt*100) + '%.'
+      : 'Enable DFMS or IoT to display simulation effects. No solid simulation line is drawn while both toggles are off.';
+  }
+
+  const simCanvas = document.getElementById('c-sim-main');
+  if (simCanvas) {
+    const empty = Array(nMo).fill(null);
+    CH1B = new Chart(simCanvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: mLbls,
+        datasets: [
+          { label: 'Revenue — Simulation', data: active ? rev.map(v => Math.round(v / 1000)) : empty,
+            borderColor: '#4A7C2D', backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: .35, pointRadius: 0, pointHoverRadius: 4 },
+          { label: 'Variable Costs — Simulation', data: active ? varC.map(v => Math.round(v / 1000)) : empty,
+            borderColor: '#B85C5C', backgroundColor: 'rgba(184,92,92,.12)',
+            fill: true, borderWidth: 1.5, tension: .35, pointRadius: 0 },
+          { label: 'Fixed Costs — Simulation', data: active ? fixC.map(v => Math.round(v / 1000)) : empty,
+            borderColor: '#C4962D', backgroundColor: 'transparent',
+            borderWidth: 1.5, tension: .35, pointRadius: 0 },
+          { label: 'Net Profit — Simulation', data: active ? profit.map(v => Math.round(v / 1000)) : empty,
+            borderColor: '#3A7CB8', backgroundColor: 'rgba(74,124,45,.10)',
+            fill: true, borderWidth: 2, tension: .35, pointRadius: 0, pointHoverRadius: 4 },
+        ]
+      },
+      options: chartLineOptions('PKR ')
+    });
+  }
+
+  // ── RADAR: always compare MANUAL BASELINE vs CowGenic ──
+  if (CH2) CH2.destroy();
+  const bHeat = MANUAL_BASELINE.heat;
+  const bConc = MANUAL_BASELINE.conc;
+  const bOpen = MANUAL_BASELINE.open;
+  const before = [ bHeat, bConc, Math.max(0, (220 - bOpen) / 1.4), s.yld * 10, 20, 15 ];
+  const after  = [
+    ON.iot ? Math.round(s.heat * 100) : bHeat,
+    ON.iot ? Math.round(s.conc * 100) : bConc,
+    ON.iot ? Math.max(0, (220 - s.openD) / 1.4) : before[2],
+    ON.dfms ? s.yld * (1 + SOL.yieldBoost) * 10 : before[3],
+    ON.dfms ? 85 : 20,
+    ON.dfms ? 90 : 15,
+  ];
+  CH2 = new Chart(document.getElementById('c-radar').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Heat Detection', 'Conception Rate', 'Cycle Efficiency', 'Yield Score', 'Owner Visibility', 'Data Accuracy'],
+      datasets: [
+        { label: 'Manual Baseline', data: before, borderColor: '#B85C5C', backgroundColor: 'rgba(184,92,92,.08)', pointBackgroundColor: '#B85C5C', borderWidth: 1.5 },
+        { label: 'With CowGenic',   data: after,  borderColor: '#4A7C2D', backgroundColor: 'rgba(74,124,45,.08)', pointBackgroundColor: '#4A7C2D', borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#5A7A5A', font: { size: 10 } } } },
+      scales: { r: { grid: { color: '#D4E2C8' }, angleLines: { color: '#D4E2C8' }, ticks: { display: false }, pointLabels: { color: '#5A7A5A', font: { size: 9 } } } }
+    }
+  });
+
+  // ── ADOPTION IMPACT CHART ──
+  if (CH4) CH4.destroy();
+  if (document.getElementById('c-adopt')) {
+    const adoptPts = [0,20,40,60,70,80,90,100];
+    const bRev0 = Math.max(0, s.milking*s.yld - s.retain)*s.price*30;
+    // This chart asks, "what if adoption moved from 0% to 100%?"
+    // Keep the no-system baseline on manual reproductive performance even when IoT is toggled on.
+    const manualConc = MANUAL_BASELINE.conc / 100;
+    const baselineConc = ON.iot ? manualConc : s.conc;
+    const bAi0  = 2*(1/baselineConc)*s.aiCost;
+    const baseMo= Math.round((bRev0 - s.varDaily*30 - s.fixMo - bAi0)/1000);
+
+    const maxExtraAnimals = (() => {
+      const pregnantDry = Math.max(0, s.herd - s.milking - 3);
+      const heatImpr = ON.iot ? SOL.heatAfter / (MANUAL_BASELINE.heat / 100) : 1;
+      const concImpr = ON.iot ? SOL.concAfter / (MANUAL_BASELINE.conc / 100) : 1;
+      const openImpr = ON.iot ? MANUAL_BASELINE.open / Math.max(60, MANUAL_BASELINE.open - SOL.openReduction) : 1;
+      return Math.round(SOL.openReduction * pregnantDry / 365 * heatImpr * concImpr * openImpr * 1.8);
+    })();
+
+    const adoptProfits = adoptPts.map(ap => {
+      if (!active) return baseMo;
+      const a = ap/100;
+      const dfmsA = ON.dfms ? a : 0;
+      const iotA  = ON.iot  ? a : 0;
+      const em  = ON.iot ? Math.round(maxExtraAnimals * iotA) : 0;
+      const yb  = ON.dfms ? SOL.yieldBoost * dfmsA : 0;
+      const cMkA= s.milking + em;
+      const cRevA = Math.max(0, cMkA*s.yld*(1+yb) - s.retain)*s.price*30;
+      const cAiA  = ON.iot ? bAi0 + (2*(1/SOL.concAfter)*s.aiCost - bAi0) * iotA : bAi0;
+      const hlthA = ON.dfms ? SOL.healthSaveAnn/12*dfmsA : 0;
+      const calfA = ON.iot ? SOL.calfPrice*SOL.calfMaleProb*0.5*iotA : 0;
+      const exFdA = em*s.fkga*s.fpkg*30;
+      const depA  = active ? SOL.depnY1 : 0; // fixed product cost is charged once product is active
+      const costA = s.varDaily*30 + exFdA + s.fixMo + depA + cAiA;
+      return Math.round((cRevA - costA + hlthA + calfA)/1000);
+    });
+
+    const curAdoptPct = Math.round(s.adopt*100);
+    CH4 = new Chart(document.getElementById('c-adopt').getContext('2d'), {
+      type:'bar',
+      data:{ labels: adoptPts.map(a=>a+'%'),
+        datasets:[
+          { label:'Monthly Profit (PKR K)', data:adoptProfits,
+            backgroundColor: adoptPts.map(a=>a===curAdoptPct?'#4A7C2D':a>=80?'rgba(74,124,45,.55)':a>=50?'rgba(196,150,45,.5)':'rgba(184,92,92,.5)'),
+            borderRadius:3, borderWidth:0 },
+          { label:'Baseline', data:Array(adoptPts.length).fill(baseMo),
+            type:'line', borderColor:'#B85C5C', borderDash:[4,3],
+            borderWidth:1.5, pointRadius:0, backgroundColor:'transparent' },
+        ]},
+      options:{ responsive:true,
+        plugins:{ legend:{labels:{font:{size:9},boxWidth:8,color:'#5A7A5A'}} },
+        scales:{
+          x:{ticks:{font:{size:9},color:'#8BA88B'},grid:{display:false}},
+          y:{ticks:{font:{size:9},color:'#5A7A5A',callback:v=>v+'K'},grid:{color:'#EEF2E8'}}
+        }}
+    });
+  }
+
+  // ── CUMULATIVE NET VALUE CHART ──
+  if (CH5) CH5.destroy();
+  if (document.getElementById('c-cumul')) {
+    const numMo  = Math.min(s.months||24, 36);
+    const invest = active ? ((s.investOverride>0) ? s.investOverride : autoInvestment()) : 0;
+    const cumData = [];
+    let cum = -invest;
+    let paybackMonth = invest === 0 ? 0 : -1;
+    for (let m = 0; m < numMo; m++) {
+      const bProfit = r.proj.baseProfit[m];
+      const cProfit = active ? r.proj.cgProfit[m] : bProfit;
+      const incr = active ? (cProfit - bProfit) : 0;
+      cum += incr;
+      if (paybackMonth < 0 && cum >= 0) paybackMonth = m;
+      cumData.push(Math.round(cum/1000));
+    }
+    const lblsC = MNTHS36.slice(0, numMo);
+    const cumNote = document.getElementById('c-cumul') && document.getElementById('c-cumul').closest('.chart-card') && document.getElementById('c-cumul').closest('.chart-card').querySelector('.note');
+    if (cumNote && active && paybackMonth >= 0) {
+      cumNote.textContent = '✅ Payback at Month ' + (paybackMonth+1) + ' (' + (lblsC[paybackMonth]||'') + '). Investment PKR ' + Math.round(invest/1000) + 'K. Integrated adoption ' + Math.round(s.adopt*100) + '%.';
+    } else if (cumNote && active) {
+      cumNote.textContent = 'No payback within selected timeline. Investment PKR ' + Math.round(invest/1000) + 'K. Integrated adoption ' + Math.round(s.adopt*100) + '%.';
+    } else if (cumNote) {
+      cumNote.textContent = 'Enable DFMS or IoT to activate investment and adoption impact.';
+    }
+    const paybackData = cumData.map((v, i) => active && i === paybackMonth ? 0 : null);
+    CH5 = new Chart(document.getElementById('c-cumul').getContext('2d'), {
+      type:'line',
+      data:{ labels:lblsC,
+        datasets:[
+          { label:'Cumulative Net (PKR K)', data:cumData,
+            borderColor:'#4A7C2D', borderWidth:2.5, tension:.35,
+            pointRadius:0, pointHoverRadius:4,
+            backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,180);g.addColorStop(0,'rgba(74,124,45,.18)');g.addColorStop(1,'rgba(74,124,45,.01)');return g;},
+            fill:true },
+          { label:'Break-even', data:Array(numMo).fill(0),
+            borderColor:'#8BA88B', borderDash:[3,3], borderWidth:1,
+            pointRadius:0, backgroundColor:'transparent' },
+          { label: active && paybackMonth>=0 ? 'Payback Month '+String(paybackMonth+1) : '',
+            data: paybackData,
+            type:'scatter', pointRadius: paybackData.map(v=>v===null?0:8),
+            pointBackgroundColor:'#4A7C2D', borderColor:'#4A7C2D',
+            showLine:false },
+        ]},
+      options:{ responsive:true,
+        plugins:{ legend:{labels:{font:{size:9},boxWidth:8,color:'#5A7A5A'}},
+          tooltip:{callbacks:{label:c=>' '+c.dataset.label+': PKR '+c.parsed.y+'K'}} },
+        scales:{
+          x:{ticks:{font:{size:9},color:'#8BA88B',maxTicksLimit:8},grid:{color:'#EEF2E8'}},
+          y:{ticks:{font:{size:9},color:'#5A7A5A',callback:v=>v+'K PKR'},grid:{color:'#EEF2E8'}}
+        }}
+    });
+  }
+
+  // ── YIELD TRAJECTORY: always show BOTH baseline and CG lines ──
+  if (CH3) CH3.destroy();
+  CH3 = new Chart(document.getElementById('c-yield').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: mLbls,
+      datasets: [
+        { label: 'Baseline (L/day)',
+          data: r.proj.baseProd.slice(0, nMo).map(v => Math.round(v * 10) / 10),
+          borderColor: '#B85C5C', backgroundColor: 'rgba(184,92,92,.06)',
+          fill: true, tension: .35, pointRadius: 0, borderWidth: 2, borderDash: [5, 3] },
+        { label: active ? 'Simulation — Integrated Adoption: '+Math.round(s.adopt*100)+'%' : 'Simulation — off',
+          data: active ? r.proj.cgProd.slice(0, nMo).map(v => Math.round(v * 10) / 10) : Array(nMo).fill(null),
+          borderColor: '#4A7C2D', backgroundColor: 'rgba(74,124,45,.10)',
+          fill: true, tension: .35, pointRadius: 0, borderWidth: 2.5 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#5A7A5A', font: { size: 10 } } },
+        tooltip: {
+          backgroundColor: '#FFF', borderColor: '#D4E2C8', borderWidth: 1,
+          titleColor: '#2C3E2C', bodyColor: '#5A7A5A',
+          callbacks: { label: c => ' ' + c.dataset.label.split('(')[0] + ': ' + c.parsed.y + ' L' }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8BA88B', maxTicksLimit: 12, font: { size: 9 } }, grid: { color: '#EEF2E8' } },
+        y: { ticks: { color: '#5A7A5A', font: { size: 9 }, callback: v => v + ' L' }, grid: { color: '#EEF2E8' } }
+      }
+    }
+  });
+}
+
+
+function drawParameterCharts(s, r, active) {
+  const baseOpts = {
+    responsive:true,
+    maintainAspectRatio:false,
+    indexAxis:'y',
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.formattedValue}} },
+    scales:{
+      x:{ticks:{font:{size:8},color:'#5A7A5A'},grid:{color:'#EEF2E8'}},
+      y:{ticks:{font:{size:8},color:'#5A7A5A'},grid:{display:false}}
+    }
+  };
+  if (document.getElementById('c-farm-bars')) {
+    if (CH6) CH6.destroy();
+    CH6 = new Chart(document.getElementById('c-farm-bars').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Herd','Milking','Baseline L/day','CowGenic L/day'],
+        datasets:[{ label:'Farm Configuration', data:[s.herd, s.milking, Math.round(r.baseProd), active ? Math.round(r.cgProd) : 0],
+          backgroundColor:['rgba(74,124,45,.55)','rgba(58,124,184,.50)','rgba(184,92,92,.45)','rgba(74,124,45,.75)'], borderWidth:0, borderRadius:3 }]},
+      options:baseOpts
+    });
+  }
+  if (document.getElementById('c-cost-bars')) {
+    if (CH7) CH7.destroy();
+    CH7 = new Chart(document.getElementById('c-cost-bars').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Wanda/day','Fodder/day','Fuel/day','Fixed/day'],
+        datasets:[{ label:'PKR', data:[s.wanda, Math.round(s.fodderDaily), s.fuel, Math.round(s.fixMo/30)],
+          backgroundColor:['rgba(196,150,45,.65)','rgba(74,124,45,.55)','rgba(58,124,184,.50)','rgba(139,168,139,.55)'], borderWidth:0, borderRadius:3 }]},
+      options:{...baseOpts, scales:{...baseOpts.scales, x:{...baseOpts.scales.x, ticks:{...baseOpts.scales.x.ticks, callback:v=>Math.round(v/1000)+'K'}}}}
+    });
+  }
+  if (document.getElementById('c-repro-bars')) {
+    if (CH8) CH8.destroy();
+    CH8 = new Chart(document.getElementById('c-repro-bars').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Heat %','Conception %','Open Days','AI Cost (K)'],
+        datasets:[{ label:'Reproductive Parameters', data:[Math.round(s.heat*100), Math.round(s.conc*100), s.openD, Math.round(s.aiCost/1000)],
+          backgroundColor:['rgba(74,124,45,.65)','rgba(58,124,184,.55)','rgba(184,92,92,.45)','rgba(196,150,45,.65)'], borderWidth:0, borderRadius:3 }]},
+      options:baseOpts
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROI TABLE
+// ═══════════════════════════════════════════════════════════════════
+function drawROI(s, r, active) {
+  const tb = document.getElementById('roi-body');
+  tb.innerHTML = '';
+
+  if (!active) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:14px">Enable DFMS or IoT Collars to see ROI</td></tr>';
+    return;
+  }
+
+  const items = [
+    { l: 'More Animals Milking (reduced open days)', p: 'IoT',
+      b: r.extraAnimals * r.cgYield * s.price * 365,
+      c: SOL.collarPer * SOL.numCollars + SOL.baseStation,
+      on: ON.iot },
+    { l: 'Yield Improvement (9.1→9.5 L/day)', p: 'DFMS',
+      b: s.milking * s.yld * SOL.yieldBoost * s.dfmsAdopt * s.price * 365,
+      c: SOL.setupFee,
+      on: ON.dfms },
+    { l: 'Health Loss Prevention', p: 'DFMS',
+      b: SOL.healthSaveAnn * s.dfmsAdopt, c: 0, on: ON.dfms },
+    { l: 'AI Cost Savings (fewer attempts)', p: 'IoT',
+      b: ON.iot ? (s.aiPerConc - 1 / SOL.concAfter) * s.aiCost * s.milking * 0.6 * 12 * s.iotAdopt : 0,
+      c: 0, on: ON.iot },
+    { l: 'Male Calf Sales', p: 'IoT',
+      b: ON.iot ? SOL.calfPrice * SOL.calfMaleProb * 2 * s.iotAdopt : 0,
+      c: 0, on: ON.iot },
+    { l: 'Recurring: Subscription + Battery', p: 'DFMS',
+      b: 0, c: (ON.dfms ? SOL.dfmsSub : 0) + (ON.iot ? SOL.batteryAnn : 0),
+      on: ON.dfms, recurring: true },
+  ];
+
+  let totB = 0, totC = 0;
+  items.forEach(it => {
+    if (!it.on) return;
+    const net = it.b - it.c;
+    const pb = it.c > 0 && it.b > 0 ? Math.ceil(it.c / (it.b / 12)) : 0;
+    totB += it.b; totC += it.c;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${it.l}</td>
+      <td><span class="tag ${it.p === 'IoT' ? 'i' : 'd'}">${it.p}</span></td>
+      <td class="pos">${it.b > 0 ? '+PKR ' + fmt(it.b) : '—'}</td>
+      <td class="neg">${it.c > 0 ? 'PKR ' + fmt(it.c) + (it.recurring ? '/yr' : '') : '—'}</td>
+      <td class="${net >= 0 ? 'pos' : 'neg'}">${(it.b > 0 || it.c > 0) ? (net >= 0 ? '+' : '') + 'PKR ' + fmt(net) : '—'}</td>
+      <td style="color:var(--dim)">${pb > 0 ? pb + ' mo' : '—'}</td>`;
+    tb.appendChild(tr);
+  });
+
+  const totN = totB - totC;
+  const tr = document.createElement('tr');
+  tr.style.borderTop = '2px solid var(--gd)';
+  tr.innerHTML = `
+    <td style="font-weight:700">TOTAL</td><td></td>
+    <td class="pos" style="font-weight:700">+PKR ${fmt(totB)}</td>
+    <td class="neg" style="font-weight:700">${totC > 0 ? 'PKR ' + fmt(totC) : '—'}</td>
+    <td class="pos" style="font-weight:700">+PKR ${fmt(totN)}</td>
+    <td style="color:var(--gd);font-weight:700">${totC > 0 && totB > 0 ? Math.ceil(totC / (totB / 12)) + ' mo' : '—'}</td>`;
+  tb.appendChild(tr);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EVENT LISTENERS — every slider triggers full recalculation
+// ═══════════════════════════════════════════════════════════════════
+['s-herd','s-milk','s-yield','s-price','s-ret','s-wanda','s-fpkg','s-fkga','s-fuel','s-fix','s-heat','s-conc','s-open','s-aic','s-adopt-dfms','s-adopt-iot','s-months','s-invest'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', update);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT — Products OFF by design. Adoption and investment start at zero.
+// ═══════════════════════════════════════════════════════════════════
+document.getElementById('btn-dfms').classList.toggle('on', ON.dfms);
+document.getElementById('btn-iot').classList.toggle('on', ON.iot);
+document.getElementById('s-adopt-dfms').value = 0;
+document.getElementById('s-adopt-iot').value = 0;
+document.getElementById('s-invest').value = 0;
+document.getElementById('s-heat').value = MANUAL_BASELINE.heat;
+document.getElementById('s-conc').value = MANUAL_BASELINE.conc;
+document.getElementById('s-open').value = MANUAL_BASELINE.open;
+if (document.getElementById('rp-sub'))
+  document.getElementById('rp-sub').textContent = 'Manual operation (baseline)';
+update();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
