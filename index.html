@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BK Dairy — CowGenic Impact Simulator</title>
+<title>Financial Impact Simulator - Client</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root {
@@ -377,7 +377,7 @@ body > .chart-card, body > .grid2 { max-width:1440px; }
 
 <header>
   <div>
-    <h1>🐄 BK Dairy — Digital Transformation Impact Simulator</h1>
+    <h1>🐄 Financial Impact Simulator - Client</h1>
     <p>31 KM Multan Road, Sundar, Lahore · LUMS TME 6201 · Dr. Ussama Yaqoob & Mr. Badar Khushnood</p>
   </div>
   <div class="live"><i></i> LIVE SIMULATION</div>
@@ -605,7 +605,7 @@ body > .chart-card, body > .grid2 { max-width:1440px; }
     </div>
   </div>
 
-<p class="foot">⚠️ All defaults from BK_Dairy_Financial_Workbook.xlsx · Sliders = live sensitivity analysis · LUMS TME 6201</p>
+<p class="foot">⚠️ All defaults from Client_Financial_Workbook.xlsx · Sliders = live sensitivity analysis · LUMS TME 6201</p>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -617,7 +617,7 @@ let ON = { dfms: false, iot: false };
 const MANUAL_BASELINE = { heat: 50, conc: 50, open: 150 };
 
 // ═══════════════════════════════════════════════════════════════════
-// ANCHOR DATA — extracted verbatim from BK_Dairy_Financial_Workbook.xlsx
+// ANCHOR DATA — extracted verbatim from Client_Financial_Workbook.xlsx
 // Every number here matches a specific cell in the workbook.
 // When sliders are at default positions, the simulator reproduces
 // the workbook's exact outputs.
@@ -672,7 +672,7 @@ const WB = {
   roi24: 9.806,                 // ROI Summary B22
 };
 
-// ── Actual historical production (from BK_Dairy_Unified_Model.xlsx) ──
+// ── Actual historical production (from Client_Dairy_Unified_Model.xlsx) ──
 const ACTUAL_MONTHLY = {
   'May-25': {prod: 224.3, milking: 24.0, yield: 9.3},
   'Jun-25': {prod: 227.6, milking: 24.0, yield: 9.5},
